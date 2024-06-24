@@ -1,3 +1,7 @@
+mod ui;
+
 fn main() {
-    println!("Hello, world!");
+    let (username, password) = ui::prompt_signup();
+
+    println!("{},{}",username,password);
 }
