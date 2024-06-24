@@ -17,6 +17,8 @@ pub fn prompt_signup() -> (String, String) {
             break;
         }   
     }
+
+    // TODO: check for existing user
     
     // password loop
     let mut password: String;
@@ -39,7 +41,9 @@ pub fn prompt_signup() -> (String, String) {
     return (username.trim().to_string(), password.trim().to_string());
 }
 
-// TODO: do something with the password
+// TODO: check for existing user, if exists
+// use this function instead of prompting for
+// a valid password during prompt_signup
 pub fn prompt_password() -> String {
     let mut password: String;
 
@@ -56,6 +60,14 @@ pub fn prompt_password() -> String {
 
 // =================================== HELPER FUNCtioNS ===================================
 
+fn valid_username(input: &str) -> bool {
+    if input.len() < 1 {
+        println!("\nInvalid username");
+        return false;
+    }   
+    return true;
+}
+
 fn valid_password(input: &str) -> bool {
     if input.len() < 1 {
         println!("\nInvalid password");
@@ -64,13 +76,6 @@ fn valid_password(input: &str) -> bool {
     return true;
 }
 
-fn valid_username(input: &str) -> bool {
-    if input.len() < 1 {
-        println!("\nInvalid password");
-        return false;
-    }   
-    return true;
-}
 
 fn read_password() -> std::io::Result<String> {
     let stdin = 0;
@@ -97,4 +102,14 @@ pub fn print_prompt(msg: String) {
     print!("\n+"); for _ in 0..msg.len()-2 { print!("="); } print!("+\n");
     println!("{}", msg);
     print!("+"); for _ in 0..msg.len()-2 { print!("="); } print!("+\n");
+}
+
+pub fn print_title_block(title: &str, msg: String) {
+    print!("\n+"); for _ in 0..6 { print!("="); } 
+    print!(" {title} ");
+    for _ in 0..6 { print!("="); } print!("+\n");
+    
+    let bottom_length = 6 + 1 + title.len() + 1 + 6;
+    println!("{}", msg);
+    print!("+"); for _ in 0..bottom_length { print!("="); } print!("+\n"); 
 }
