@@ -1,0 +1,1 @@
+Simple local password manager
