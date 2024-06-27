@@ -1,6 +1,7 @@
 use std::io::Write;
-use termios::*;
+use termios::*; // for hiding password input in terminal
 
+use crate::password_manager::PasswordManager;
 // ======================================= PROMPTS =======================================
 
 pub fn prompt_signup() -> (String, String) {
@@ -8,7 +9,7 @@ pub fn prompt_signup() -> (String, String) {
     // username loop
     let mut username: String = String::new();
     loop {
-        print_prompt("Username".to_string());
+        format_prompt("Username".to_string());
         print!("> "); std::io::stdout().flush().unwrap();
         std::io::stdin().read_line(&mut username).expect("\nFailed to read input");
         let username = username.trim();
@@ -24,7 +25,7 @@ pub fn prompt_signup() -> (String, String) {
     let mut password: String;
     loop {
         // password prompt message
-        print_prompt("Password".to_string());
+        format_prompt("Password".to_string());
         print!("> "); std::io::stdout().flush().unwrap();
         
         // disable terminal echoing, 
@@ -44,11 +45,11 @@ pub fn prompt_signup() -> (String, String) {
 // TODO: check for existing user, if exists
 // use this function instead of prompting for
 // a valid password during prompt_signup
-pub fn prompt_password() -> String {
+pub fn prompt_master_password() -> String {
     let mut password: String;
 
     // password prompt message
-    print_prompt("Enter your Master Password".to_string());
+    format_prompt("Enter your Master Password".to_string());
     print!("> "); std::io::stdout().flush().unwrap();
     
     // disable terminal echoing, 
@@ -56,6 +57,27 @@ pub fn prompt_password() -> String {
     password = read_password().unwrap();
         
     return password.trim().to_string();
+}
+
+pub fn prompt_service_password(service: String) -> String {
+    let mut password: String;
+
+    // password prompt message
+    format_prompt(format!("Enter password for {}", service));
+    print!("> "); std::io::stdout().flush().unwrap();
+    
+    // disable terminal echoing, 
+    // then take password input
+    password = read_password().unwrap();
+    println!();
+        
+    return password.trim().to_string();
+}
+
+pub fn prompt_main(manager: &PasswordManager) {  
+    let msg = format!("{}'s Password Manager", manager.get_username());
+    format_prompt(msg);
+    print!("> "); std::io::stdout().flush().unwrap();
 }
 
 // =================================== HELPER FUNCtioNS ===================================
@@ -75,7 +97,6 @@ fn valid_password(input: &str) -> bool {
     }   
     return true;
 }
-
 
 fn read_password() -> std::io::Result<String> {
     let stdin = 0;
@@ -98,7 +119,7 @@ fn read_password() -> std::io::Result<String> {
     Ok(password)
 }
 
-pub fn print_prompt(msg: String) {
+pub fn format_prompt(msg: String) {
     print!("\n+"); for _ in 0..msg.len()-2 { print!("="); } print!("+\n");
     println!("{}", msg);
     print!("+"); for _ in 0..msg.len()-2 { print!("="); } print!("+\n");

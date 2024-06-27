@@ -1,63 +1,73 @@
-// // cryptography
-// use aes_gcm::{aead::{Aead, AeadCore, KeyInit, OsRng}, Aes256Gcm, Key};
-
-// // prompts, displays, etc
-// mod ui;
-
-// fn generate_key_from_password(password: &str) -> Key<Aes256Gcm> {
-//     // Pad or truncate the password to exactly 32 bytes
-//     let mut key_bytes = [0u8; 32];
-//     let password_bytes = password.as_bytes();
-//     let copy_len = password_bytes.len().min(32);
-//     key_bytes[..copy_len].copy_from_slice(&password_bytes[..copy_len]);
-
-//     Key::<Aes256Gcm>::from_slice(&key_bytes).clone()
-// }
-
-// fn main() {
-//     // get the user
-//     let (username, password) = ui::prompt_signup();
-
-//     // generate key based on a string
-//     let key: Key<Aes256Gcm> = generate_key_from_password(&password);
-
-//     // create aes instance
-//     let cipher = Aes256Gcm::new(&key);
-
-//     // create message
-//     let message = b"Hello, World!";
-
-//     // create random nonce
-//     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-
-//     // encrypt message
-//     let ciphertext = cipher
-//         .encrypt(&nonce, message.as_ref())
-//         .expect("encryption failure!");
-
-//     // decrypt message
-//     let plaintext = cipher
-//         .decrypt(&nonce, ciphertext.as_ref())
-//         .expect("decryption failure!");
-
-//     // result
-//     println!("\n\nusername:{}\npassword:{}", username, password);
-//     println!("Encrypted (bytes): {:?}", &ciphertext);
-//     println!("Encrypted (text): {:?}", String::from_utf8_lossy(&ciphertext));
-//     println!("Decrypted: {:?}", String::from_utf8_lossy(&plaintext));
-// }
+use clap::{Parser, Subcommand};
 
 mod password_manager; use password_manager::PasswordManager;
-mod ui;
+mod util;
 
 fn main() {
-    let (_username, password) = ui::prompt_signup();
-
-    let mut pass_man = PasswordManager::new(&password);
+    let (username, password) = util::prompt_signup();
+    let mut manager = PasswordManager::new(username, password);
     
-    pass_man.add_password("example.com", "password123");
-    pass_man.add_password("example.org", "password123");
+    // main interactive loop
+    loop {
+        util::prompt_main(&manager);
 
-    println!("example.com password: {:?}", pass_man.get_password("example.com"));
-    println!("example.org password: {:?}", pass_man.get_password("example.org"));
+        // get user input
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).expect("Failed to read line");
+        let input = input.trim();
+
+        // automatically include initial arg
+        let input = format!("{} {}", "> ", input);
+
+        // split the input into args
+        let args = shlex::split(&input).ok_or("error: Invalid quoting").unwrap();
+
+        // parse the input
+        let cli = Cli::try_parse_from(args.iter());
+
+        // check if parsing was successful
+        match cli {
+            Ok(cli) => {
+                // handle the input
+                match cli.commands {
+                    Commands::Add{service} => {
+                        manager.add_password(service);
+                    },
+                    Commands::Get{service} => {
+                        match manager.get_password(service.clone()) {
+                            Some(password) => println!("{}: {:?}", service.clone(), password),
+                            None => println!("\n{} doesn't exist", service.clone()),
+                        }
+                    },
+
+                    // TODO
+                    Commands::List{} => println!("list"),
+
+                    Commands::Exit{} => { println!("\nGoodbye"); break; },
+                }
+            }
+            Err(e) => println!("{}", e),
+        }
+    }
+}
+
+#[derive(Parser, Debug)]
+struct Cli {
+    #[clap(subcommand)]
+    commands: Commands
+}
+
+#[derive(Subcommand, Debug, Clone)]
+enum Commands {
+    #[clap(about = "add an entry        ::", visible_alias = "a")]
+    Add{service: String},
+    
+    #[clap(about = "get an entry        ::", visible_alias = "g")]
+    Get{service: String},
+
+    #[clap(about = "list all entries    ::", visible_alias = "l")]
+    List{},
+
+    #[clap(about = "exit the program", visible_aliases = &["q", "e"])]
+    Exit{},
 }
