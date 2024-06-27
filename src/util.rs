@@ -46,7 +46,7 @@ pub fn prompt_signup() -> (String, String) {
 // use this function instead of prompting for
 // a valid password during prompt_signup
 pub fn prompt_master_password() -> String {
-    let mut password: String;
+    let password: String;
 
     // password prompt message
     format_prompt("Enter your Master Password".to_string());
@@ -60,7 +60,7 @@ pub fn prompt_master_password() -> String {
 }
 
 pub fn prompt_service_password(service: String) -> String {
-    let mut password: String;
+    let password: String;
 
     // password prompt message
     format_prompt(format!("Enter password for {}", service));

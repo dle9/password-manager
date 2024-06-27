@@ -1,8 +1,14 @@
+// cryptography
 use aes_gcm::{aead::{Aead, AeadCore, KeyInit}, Aes256Gcm, Key};
 use pbkdf2::pbkdf2_hmac;
 use rand_core::{OsRng, RngCore};
 use sha2::Sha256;
 use std::collections::HashMap;
+
+// file i/o
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::path::Path;
 
 use crate::util;
 
@@ -11,11 +17,14 @@ use crate::util;
 pub struct PasswordManager {
     username: String,
     master_key: Key<Aes256Gcm>,
-    passwords: HashMap<String, (Vec<u8>, Vec<u8>)>,
+    // passwords: HashMap<String, (Vec<u8>, Vec<u8>)>,
 }
 
 impl PasswordManager {
     pub fn new(username: String, master_password: String) -> Self {
+
+        // make user file 
+        File::create(&format!("data/{}", username.clone())).expect("Failed to create file");
 
         // generate rand salt
         let mut salt = [0u8; 16];
@@ -36,7 +45,7 @@ impl PasswordManager {
         return Self {
             username,
             master_key,
-            passwords: HashMap::new(),
+            // passwords: HashMap::new(),
         }
     }
 
@@ -59,34 +68,69 @@ impl PasswordManager {
         let ciphertext = cipher.encrypt(&nonce, password.as_bytes())
             .expect("encryption failure!");
 
-        // concatenate nonce and ciphertext (same plaintext will map to diff ciphertext bc of nonce)
-        let mut encrypted_data = nonce.to_vec();
-        encrypted_data.extend_from_slice(&ciphertext);
+        // // concatenate nonce and ciphertext (same plaintext will map to diff ciphertext bc of nonce)
+        // let mut encrypted_data = nonce.to_vec();
+        // encrypted_data.extend_from_slice(&ciphertext);
 
-        // store encrypted data and salt
-        self.passwords.insert(service.to_string(), (encrypted_data, salt.to_vec()));
+        // // store encrypted data and salt
+        // self.passwords.insert(service.to_string(), (encrypted_data, salt.to_vec()));
+        // Concatenate service, nonce, and ciphertext
+        let mut entry = service.into_bytes();
+        entry.push(0); // Null byte separator
+        entry.extend_from_slice(&nonce);
+        entry.extend_from_slice(&ciphertext);
+        
+        // Append entry to file
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(&format!("data/{}", self.get_username()))
+            .expect("Failed to open file");
+        
+        file.write_all(&entry).expect("Failed to write entry");
+        file.write_all(&[b'\n']).expect("Failed to write newline");
     }
 
     pub fn get_password(&self, service: String) -> Option<String> {
 
-        // check if the service exists
-        if let Some((encrypted_data, _)) = self.passwords.get(&service) {
+        // // check if the service exists
+        // if let Some((encrypted_data, _)) = self.passwords.get(&service) {
 
-            // "de-concatenate" the nonce and ciphertext
-            let (nonce, ciphertext) = encrypted_data.split_at(12);
+        //     // "de-concatenate" the nonce and ciphertext
+        //     let (nonce, ciphertext) = encrypted_data.split_at(12);
             
-            // create cipher instance with master key
-            let cipher = Aes256Gcm::new(&self.master_key);
+        //     // create cipher instance with master key
+        //     let cipher = Aes256Gcm::new(&self.master_key);
             
-            // decrypt ciphertext
-            let plaintext = cipher.decrypt(nonce.into(), ciphertext)
-                .expect("decryption failure!");
+        //     // decrypt ciphertext
+        //     let plaintext = cipher.decrypt(nonce.into(), ciphertext)
+        //         .expect("decryption failure!");
             
-            // convert plaintext to character format
-            return Some(String::from_utf8(plaintext).unwrap())
-        } else {
-            return None
+        //     // convert plaintext to character format
+        //     return Some(String::from_utf8(plaintext).unwrap())
+        // } else {
+        //     return None
+        // }
+        let file = File::open(&format!("data/{}", self.get_username())).expect("Failed to open file");
+        let reader = BufReader::new(file);
+        
+        for line in reader.lines() {
+            let line = line.expect("Failed to read line");
+            let parts: Vec<&str> = line.splitn(2, '\0').collect();
+            
+            if parts.len() == 2 && parts[0] == service {
+                let encrypted_data = parts[1].as_bytes();
+                let (nonce, ciphertext) = encrypted_data.split_at(12);
+                
+                let cipher = Aes256Gcm::new(&self.master_key);
+                
+                let plaintext = cipher.decrypt(nonce.into(), ciphertext)
+                    .expect("decryption failure!");
+                
+                return Some(String::from_utf8(plaintext).unwrap());
+            }
         }
+
+        return None
     }
 
     pub fn get_username(&self) -> String {
