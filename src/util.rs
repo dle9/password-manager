@@ -31,7 +31,7 @@ pub fn prompt_signup() -> (String, String, bool) {
     let username = username.trim();
 
     // user is new
-    if !Path::new(&format!("data/{}", username)).exists() {
+    if !Path::new(&format!("users/{}", username)).exists() {
         // password loop
         let mut password: String;
         loop {

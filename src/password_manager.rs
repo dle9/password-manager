@@ -22,7 +22,7 @@ pub struct PasswordManager {
 impl PasswordManager {
     pub fn new(username: String, master_password: String, new_user: bool) -> Self {
         // make user file for new user
-        if !Path::new("users").exists() {fs::create_dir("users").expect("Failed to create directory");}
+        if !Path::new("users").exists() {fs::create_dir("./users").expect("Failed to create directory");}
         if new_user {File::create(&format!("users/{}", username.clone())).expect("Failed to create file");}
 
         // derive key from password input using PBKDF2
