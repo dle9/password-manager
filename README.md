@@ -1,7 +1,7 @@
 Simple local password manager
 
 ### notes
-- user data stored in bin/<system>/users/
+- user data stored in bin/\<os\>/users/
 - no error checking in place
 - typing in wrong password = program will crash on decryption attempt
 - TODO: list command - list all service/password pairs
