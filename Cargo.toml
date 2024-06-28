@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 aes-gcm = "0.10.3"
 clap = { version = "4.5.7", features = ["derive"] }
+hex = "0.4.3"
 pbkdf2 = "0.12.2"
 rand_core = "0.6.4"
 rpassword = "7.3.1"
