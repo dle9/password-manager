@@ -1,6 +1,5 @@
 use std::io::Write;
 use std::path::Path;
-use termios::*; // for hiding password input in terminal
 
 use crate::password_manager::PasswordManager;
 
@@ -43,7 +42,7 @@ pub fn prompt_signup() -> (String, String, bool) {
 
             // disable terminal echoing,
             // then take password input
-            password = read_password().unwrap();
+            password = rpassword::read_password().unwrap();
 
             // check for character length, specials,
             // uppercase/lowercase, etc
@@ -54,7 +53,7 @@ pub fn prompt_signup() -> (String, String, bool) {
 
         return (username.to_string(), password.trim().to_string(), true);
     } 
-    
+
     // user exists
     else {
         let master_password = prompt_master_password(username.to_string());
@@ -81,7 +80,7 @@ pub fn prompt_master_password(username: String) -> String {
 
     // disable terminal echoing,
     // then take password input
-    password = read_password().unwrap();
+    password = rpassword::read_password().unwrap();
 
     return password.trim().to_string();
 }
@@ -96,7 +95,7 @@ pub fn prompt_service_password(service: String) -> String {
 
     // disable terminal echoing,
     // then take password input
-    password = read_password().unwrap();
+    password = rpassword::read_password().unwrap();
     println!();
 
     return password.trim().to_string();
@@ -118,27 +117,6 @@ fn valid_password(input: &str) -> bool {
         return false;
     }
     return true;
-}
-
-fn read_password() -> std::io::Result<String> {
-    let stdin = 0;
-    let termios = Termios::from_fd(stdin)?;
-    let mut new_termios = termios.clone();
-
-    // disable echo
-    new_termios.c_lflag &= !(ECHO | ICANON);
-    tcsetattr(stdin, TCSANOW, &new_termios)?;
-
-    let mut password = String::new();
-    std::io::stdin().read_line(&mut password)?;
-
-    // restore terminal
-    tcsetattr(stdin, TCSANOW, &termios)?;
-
-    // remove the trailing newline
-    password.trim().to_string();
-
-    Ok(password)
 }
 
 pub fn format_prompt(msg: String) {
