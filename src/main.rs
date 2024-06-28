@@ -1,26 +1,33 @@
 use clap::{Parser, Subcommand};
 
-mod password_manager; use password_manager::PasswordManager;
+mod password_manager;
+use password_manager::PasswordManager;
 mod util;
 
 fn main() {
-    let (username, password) = util::prompt_signup();
-    let mut manager = PasswordManager::new(username, password);
-    
+    // check for new/existing user and
+    // create password manager instance
+    let (username, password, new_user) = util::prompt_signup();
+    let mut manager = PasswordManager::new(username, password, new_user);
+
     // main interactive loop
     loop {
+
         util::prompt_main(&manager);
 
         // get user input
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input).expect("Failed to read line");
+        std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
         let input = input.trim();
 
-        // automatically include initial arg
+        // some stuff to make sure user input loop is working
+        // for specified commands 
         let input = format!("{} {}", "> ", input);
-
-        // split the input into args
-        let args = shlex::split(&input).ok_or("error: Invalid quoting").unwrap();
+        let args = shlex::split(&input)
+            .ok_or("error: Invalid quoting")
+            .unwrap();
 
         // parse the input
         let cli = Cli::try_parse_from(args.iter());
@@ -30,20 +37,21 @@ fn main() {
             Ok(cli) => {
                 // handle the input
                 match cli.commands {
-                    Commands::Add{service} => {
+                    Commands::Add { service } => {
                         manager.add_password(service);
-                    },
-                    Commands::Get{service} => {
-                        match manager.get_password(service.clone()) {
-                            Some(password) => println!("{}: {:?}", service.clone(), password),
-                            None => println!("\n{} doesn't exist", service.clone()),
-                        }
+                    }
+                    Commands::Get { service } => match manager.get_password(service.clone()) {
+                        Some(password) => println!("{}: {:?}", service.clone(), password),
+                        None => println!("\n{} doesn't exist", service.clone()),
                     },
 
                     // TODO
-                    Commands::List{} => println!("list"),
+                    Commands::List {} => println!("list"),
 
-                    Commands::Exit{} => { println!("\nGoodbye"); break; },
+                    Commands::Exit {} => {
+                        println!("\nGoodbye");
+                        break;
+                    }
                 }
             }
             Err(e) => println!("{}", e),
@@ -51,23 +59,24 @@ fn main() {
     }
 }
 
+// ============================================= COMMANDS =============================================
 #[derive(Parser, Debug)]
 struct Cli {
     #[clap(subcommand)]
-    commands: Commands
+    commands: Commands,
 }
 
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
     #[clap(about = "add an entry        ::", visible_alias = "a")]
-    Add{service: String},
-    
+    Add { service: String },
+
     #[clap(about = "get an entry        ::", visible_alias = "g")]
-    Get{service: String},
+    Get { service: String },
 
     #[clap(about = "list all entries    ::", visible_alias = "l")]
-    List{},
+    List {},
 
     #[clap(about = "exit the program", visible_aliases = &["q", "e"])]
-    Exit{},
+    Exit {},
 }
