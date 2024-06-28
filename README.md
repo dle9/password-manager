@@ -1,6 +1,7 @@
 Simple local password manager
 
 ### notes
+- after cloning, you can delete everything besides /bin
 - user data stored in bin/\<os\>/users/
 - no error checking in place
 - typing in wrong password = program will crash on decryption attempt
