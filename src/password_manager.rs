@@ -8,8 +8,9 @@ use rand_core::{OsRng, RngCore};
 use sha2::Sha256;
 
 // file i/o
-use std::fs::{File, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 
 use crate::util;
 
@@ -21,9 +22,8 @@ pub struct PasswordManager {
 impl PasswordManager {
     pub fn new(username: String, master_password: String, new_user: bool) -> Self {
         // make user file for new user
-        if new_user {
-            File::create(&format!("data/{}", username.clone())).expect("Failed to create file");
-        }
+        if !Path::new("users").exists() {fs::create_dir("users").expect("Failed to create directory");}
+        if new_user {File::create(&format!("users/{}", username.clone())).expect("Failed to create file");}
 
         // derive key from password input using PBKDF2
         let mut key = [0u8; 32];
@@ -69,7 +69,7 @@ impl PasswordManager {
         // append entry to file
         let mut file = OpenOptions::new()
             .append(true)
-            .open(&format!("data/{}", self.get_username()))
+            .open(&format!("users/{}", self.get_username()))
             .expect("Failed to open file");
 
         file.write_all(&entry).expect("Failed to write entry");
@@ -79,7 +79,7 @@ impl PasswordManager {
     pub fn get_password(&self, service: String) -> Option<String> {
 
         // open the file for reading
-        let file = File::open(&format!("data/{}", self.get_username())).expect("Failed to open file");
+        let file = File::open(&format!("users/{}", self.get_username())).expect("Failed to open file");
         let reader = BufReader::new(file);
 
         for line in reader.lines() {
