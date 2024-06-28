@@ -13,7 +13,6 @@ use std::io::{BufRead, BufReader, Write};
 
 use crate::util;
 
-// TODO: add persistent master key
 pub struct PasswordManager {
     username: String,
     master_key: Key<Aes256Gcm>,
